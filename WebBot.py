@@ -186,20 +186,28 @@ def enumerate_links_recursive(site):
     return followed, images, css, js
 
 
-def word_count(url_list):
+def check_pages(url_list):
     total = 0
-    page_counts = {}
+    all_page_stats = {}
     #print("checking" + str(url_list))
     for i in url_list:
-        print("checking" + str(i))
-        response = urllib2.urlopen(i)
-        html = response.read()
-        cleantext = BeautifulSoup(html, "html.parser").text
-        p1 = re.compile(r'\s*')
-        words = p1.split(cleantext)
-        total = total + len(words)
-        page_counts[i] = len(words)
-    return total, page_counts
+        p_stats = check_page(i)
+        total = total + p_stats['word count']       # total word count for site
+        all_page_stats[i] = p_stats   # word count for this page
+
+    return total, all_page_stats
+
+
+def check_page(url):
+    print("checking" + str(url))
+    stats = {}
+    response = urllib2.urlopen(url)
+    html = response.read()
+    soup = BeautifulSoup(html, "html.parser")
+    cleantext = soup.text
+    p1 = re.compile(r'\s*')
+    stats['word count'] = len(p1.split(cleantext))
+    return stats
 
 
 def report1(site_i):
@@ -234,12 +242,12 @@ def report1_work(site_i):
     count_large_pages = 0
     links = enumerate_links_recursive(site_i)
     print(links)
-    results = word_count(links[0])
+    results = check_pages(links[0])
     for x in results[1]:
-        output = output + str(results[1][x]) + " " + str(x) + "\n"
+        output = output + str(results[1][x]['word count']) + " " + str(x) + "\n"
     totals[site_i] = results[0]
     for z in results[1]:
-        if results[1][z] >= 500:
+        if results[1][z]['word count'] >= 500:
             count_large_pages += 1
 
     return output, totals, count_large_pages
